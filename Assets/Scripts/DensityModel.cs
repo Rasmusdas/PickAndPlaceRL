@@ -8,13 +8,11 @@ public class DensityModel
     private Vector3 min;
     private int cellSize;
     private int gridSize;
-    private Vector3 offset;
-    public DensityModel(Vector3 min, int gridSize, int cellSize, Vector3 offset)
+    public DensityModel(Vector3 min, int gridSize, int cellSize)
     {
         this.min = min;
         this.cellSize = cellSize;
         this.gridSize = gridSize;
-        this.offset = offset;
         visited = new bool[gridSize, gridSize];
     }
 

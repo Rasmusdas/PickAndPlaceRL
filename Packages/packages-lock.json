@@ -77,7 +77,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ml-agents": {
-      "version": "file:/home/rasmusdas/GitRepos/ml-agents/com.unity.ml-agents",
+      "version": "file:F:/ml-agents/com.unity.ml-agents",
       "depth": 0,
       "source": "local",
       "dependencies": {

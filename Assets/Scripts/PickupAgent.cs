@@ -39,28 +39,13 @@ public class PickupAgent : Agent
     private GameObject[,] heatMapTiles;
 
 
-    public override void Initialize()
-    {
-        
-    }
-
-    void Awake()
-    {
-        base.Awake();
-        target = pF.GetTarget();
-        min = pF.GetBaseBounds.min;
-        CreateHeatMap();
-
-        
-    }
-
     void SetupPositions()
     {
         Vector3 startPoint = pF.GetSpawnPoint();
         
         Vector3 targetPoint = pF.GetTargetPoint();
 
-        densityModel = new DensityModel(min.Round(),gridSize,cellSize,Vector3.zero);
+        densityModel = new DensityModel(min.Round(),gridSize,cellSize);
         PlaceAgent(startPoint);
         target.transform.position = targetPoint;
         SetReward(0);
@@ -68,7 +53,6 @@ public class PickupAgent : Agent
 
     void Start()
     {
-        SetupPositions();
         _cc = GetComponent<CharacterController>();
         prevPos = transform.position;
     }
@@ -84,14 +68,9 @@ public class PickupAgent : Agent
         }
     }
 
-    //private void Update()
-    //{
-    //    SetupPositions();
-    //}
-
     public override void OnEpisodeBegin()
     {
-        pF.Augment();
+        target = pF.GetTarget();
         SetupPositions();
         prevPos = transform.position;
     }
@@ -99,7 +78,6 @@ public class PickupAgent : Agent
     public void PlaceAgent(Vector3 pos)
     {
         warpTo = pos;
-        
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -153,61 +131,13 @@ public class PickupAgent : Agent
             }
         }
 
-        
-        
-
-        
+        pF.UpdatePlayerPosition(transform.position);
         densityModel.AddState(currentState);
-
-
-        
-
-        
-
-
-        
         agentStatsUI.SetBestReward(GetCumulativeReward());
         agentStatsUI.SetText(disAction, GetCumulativeReward());
 
         prevPos = transform.position;
-
-        UpdateHeatMap();
     }
-
-    private void CreateHeatMap()
-    {
-        GameObject map = new GameObject();
-        heatMapTiles = new GameObject[gridSize, gridSize];
-        for (int x = 0; x < gridSize; x++)
-        {
-            for (int z = 0; z < gridSize; z++)
-            {
-                Vector3 position = new Vector3(min.x + x * cellSize, 0, -20 + min.z + z * cellSize);
-                GameObject tile = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                tile.transform.parent = map.transform;
-                tile.transform.position = position;
-                tile.transform.rotation = Quaternion.Euler(90, 0, 0); // Rotate to lie flat on the ground
-                tile.transform.localScale = new Vector3(cellSize, cellSize, 1);
-                heatMapTiles[x, z] = tile;
-            }
-        }
-    }
-
-    private void UpdateHeatMap()
-    {
-        for (int x = 0; x < gridSize; x++)
-        {
-            for (int z = 0; z < gridSize; z++)
-            {
-                Vector3 position = new Vector3(min.x + x * cellSize, 0, min.z + z * cellSize);
-                bool density = densityModel.GetVisited(position);
-                Color color = Color.Lerp(Color.red, Color.green, density ? 1 : 0); // Adjust the divisor for scaling
-                heatMapTiles[x, z].GetComponent<Renderer>().material.color = color;
-            }
-        }
-    }
-
-
     public override void Heuristic(in ActionBuffers actionsOut)
     {
 

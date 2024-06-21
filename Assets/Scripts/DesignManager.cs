@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Unity.Mathematics;
 using UnityEngine;
@@ -11,18 +12,30 @@ public class DesignManager : MonoBehaviour
 
     public List<GameObject> tiles = new List<GameObject>();
     private Camera cam;
+    
+    private int placementIndex = 1;
+    private TileType[,] obstacleMap;
 
-    public GameObject[] objectsToPlace;
-    
-    private int placementIndex = 0;
-    private int[,] obstacleMap;
-    
-    
-    
+    PrefabManager prefabManager => PrefabManager.instance;
+
+    private string pathName;
+
+    Dictionary<int, TileType> indexToTileType = new Dictionary<int, TileType>()
+    {
+        {1 , TileType.Wall },
+        {2 , TileType.Start },
+        {3 , TileType.TargetFloor },
+        {4 , TileType.Spike }
+    };
 
     private void Start()
     {
         cam = Camera.main;
+
+        if(!Directory.Exists("levels"))
+        {
+            Directory.CreateDirectory("levels");
+        }
     }
 
     private void OnGUI()
@@ -32,8 +45,14 @@ public class DesignManager : MonoBehaviour
         if (GUI.Button(new Rect(85, 25, 20, 20), "+")) gridSize++;
 
         if (GUI.Button(new Rect(25, 50, 80, 20), "Create Board")) CreateBaseBoard();
-        
-        if (GUI.Button(new Rect(25, 75, 80, 20), "Print Board")) Debug.Log(GetMapStringFormat());
+
+        if (GUI.Button(new Rect(25, 75, 80, 20), "Print Board")) Debug.Log(PrettyPrint());
+
+        pathName = GUI.TextField(new Rect(25, 100, 115, 20), pathName);
+
+        if (GUI.Button(new Rect(25, 125, 80, 20), "Save Board")) File.WriteAllText("levels/"+pathName,GetTextRepresentation());
+
+
     }
 
     private void CreateBaseBoard()
@@ -43,7 +62,7 @@ public class DesignManager : MonoBehaviour
             Destroy(v);
         }
 
-        obstacleMap = new int[gridSize, gridSize];
+        obstacleMap = new TileType[gridSize, gridSize];
 
         tiles = new List<GameObject>();
 
@@ -62,7 +81,7 @@ public class DesignManager : MonoBehaviour
 
                 prim.GetComponent<Renderer>().material = floorMat;
 
-                obstacleMap[i, j] = -1;
+                obstacleMap[i, j] = TileType.Empty;
             }
         }
 
@@ -82,7 +101,7 @@ public class DesignManager : MonoBehaviour
             {
                 if(Input.GetMouseButton(0))
                 {
-                    var placePrefab = objectsToPlace[placementIndex];
+                    var placePrefab = prefabManager[indexToTileType[placementIndex]];
                     var placedObject = Instantiate(placePrefab,hit.collider.transform.position,placePrefab.transform.rotation);
 
                     placedObject.transform.position = hit.collider.transform.position + Vector3.up/2;
@@ -91,7 +110,7 @@ public class DesignManager : MonoBehaviour
 
                     var rounded = hit.transform.position.Round();
 
-                    obstacleMap[rounded.x, rounded.z] = placementIndex;
+                    obstacleMap[rounded.x, rounded.z] = indexToTileType[placementIndex];
                 }
             }
 
@@ -105,7 +124,7 @@ public class DesignManager : MonoBehaviour
                     
                     var rounded = hit.transform.position.Round();
 
-                    obstacleMap[rounded.x, rounded.z] = -1;
+                    obstacleMap[rounded.x, rounded.z] = TileType.Empty;
                 }
             }
         }
@@ -114,7 +133,7 @@ public class DesignManager : MonoBehaviour
 
         if (num != -1)
         {
-            placementIndex = Mathf.Min(num ,objectsToPlace.Length)-1;
+            placementIndex = num;
         }
     }
 
@@ -129,7 +148,7 @@ public class DesignManager : MonoBehaviour
         return -1;
     }
 
-    private string GetMapStringFormat()
+    private string PrettyPrint()
     {
         StringBuilder sb = new StringBuilder();
         sb.Append($"{gridSize}\n");
@@ -141,6 +160,21 @@ public class DesignManager : MonoBehaviour
             }
 
             sb.Append("\n");
+        }
+
+        return sb.ToString();
+    }
+
+    private string GetTextRepresentation()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append($"{gridSize}");
+        for (int i = 0; i < gridSize; i++)
+        {
+            for (int j = 0; j < gridSize; j++)
+            {
+                sb.Append($";{(int)obstacleMap[i, j]}");
+            }
         }
 
         return sb.ToString();
